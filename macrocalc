@@ -1,0 +1,123 @@
+#Ces macros doivent être rajoutées aux modules libreoffice du raspberry
+#la fonction average doit être associé à l'évênement 'activation du document'
+#la fonction savefile doit être associé à l'évênement 'désactivation du document'
+Sub average
+	
+	dim my_doc   as object
+	Dim my_sheets as object
+	Dim my_cell as object
+	dim  i as  integer
+	dim nrows,totalsum, sum, min, max as double
+	dim extTime, intTime,topTime,leftTime,rightTime,downTime as double
+	dim left(6), right(6), top(8), down(4), inter(6), ext(6)  as integer
+	ext()=Array(1,2,3,4,5,6)
+	extTime=intTime=topTime=leftTime=rightTime=downTime=0
+	left=Array(1,2,3,7,8,9)
+	top(0)=2
+	top(1)=3
+	top(2)=4
+	top(3)=5
+	top(4)=8
+	top(5)=9
+	top(6)=10
+	top(7)=11
+	down(0)=1
+	down(1)=6
+	down(2)=7
+	doc = ThisComponent
+	sheet = doc.Sheets(0) 'Feuille1: Donnees de....
+	totalsum=0
+	min=0
+	max=0
+	nrows=1
+	Do Until sheet.getCellByPosition(13,nrows+1).Value =0  'Temps de la LED1 dans la 13eme colonne
+		sum=sum+sheet.getCellByPosition(i+13,nrows).value
+		nrows=nrows+1
+	loop 
+	for i =0 to 14
+		sum=0
+		if nrows>1 then 'evite la division par 0 lorsque le fichier est créé
+			sheet.getCellByPosition(i+13,nrows).setValue(sum/(nrows-1))
+			totalsum=totalsum+sheet.getCellByPosition(i+13,nrows-1).value
+			if (min-(sum/(nrows-1))>0) then
+				min=sum/(nrows-1) 
+			endif
+			if (max-(sum/(nrows-1))<0) then
+				max=sum/(nrows-1)
+			endif
+		endif 
+	Next
+		sheet.getCellByPosition(min+13,nrows).CharColor = RGB(255,0,0)
+		
+		sheet.getCellByPosition(max+13,nrows).CharColor = RGB(0,255,0)
+		
+		if totalsum>0 then  
+			for i=0 to 5'calcul moyenne Temps extérieur
+				if sheet.getCellByPosition(i+13,nrows).value>0 then
+					k=k+1
+					extTime=extTime+sheet.getCellByPosition(i+13,nrows).value
+				endif 
+			next
+			sheet.getCellByPosition(12,nrows).setValue(extTime/k)
+			k=0
+			for i=6 to 11
+				if sheet.getCellByPosition(i+13,nrows).value>0 then
+					k=k+1
+					intTime=intTime+sheet.getCellByPosition(i+13,nrows).value
+				endif
+			next 
+			sheet.getCellByPosition(11,nrows).setValue(intTime/k)
+			k=0
+			for i = (0) to (5)
+				if sheet.getCellByPosition(i+13,nrows).value>0 then
+					k=k+1
+					leftTime=leftTime+sheet.getCellByPosition(left(i)+13,nrows).value
+				endif
+				right(i)=(left(i)+3)
+				j=i+1
+			next
+			sheet.getCellByPosition(7,nrows).setValue(leftTime/k)
+			right(6)=15
+			k=0
+			for i=(0) to(6) :
+				if sheet.getCellByPosition(i+13,nrows).value>0 then
+					k=k+1
+					rightTime=rightTime+sheet.getCellByPosition(right(i)+13,nrows).value
+				endif
+			next 
+			sheet.getCellByPosition(8,nrows).setValue(rightTime/k)
+			k=0
+			for i= (0) to (7)
+				if sheet.getCellByPosition(i+13,nrows).value>0 then
+					k=k+1
+					topTime=topTime+sheet.getCellByPosition(top(i)+13,nrows).value
+				endif
+			next 
+			sheet.getCellByPosition(9,nrows).setValue(topTime/k)
+			k=0
+			for i = (0) to (6)
+				if sheet.getCellByPosition(i+13,nrows).value>0 then
+					k=k+1
+					downTime=downTime+sheet.getCellByPosition(down(i)+13,nrows).value
+				endif
+			next 
+			sheet.getCellByPosition(10,nrows).setValue(downTime/k)
+			sheet.getCellByPosition(2,nrows-1).setValue(totalsum/15) 
+		endif
+
+End Sub
+
+
+sub savefile
+rem ----------------------------------------------------------------------
+rem define variables
+dim document   as object
+dim dispatcher as object
+rem ----------------------------------------------------------------------
+rem get access to the document
+document   = ThisComponent.CurrentController.Frame
+dispatcher = createUnoService("com.sun.star.frame.DispatchHelper")
+
+rem ----------------------------------------------------------------------
+dispatcher.executeDispatch(document, ".uno:Save", "", 0, Array())
+
